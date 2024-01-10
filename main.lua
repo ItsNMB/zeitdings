@@ -9,13 +9,16 @@
 -- TODO: add end button
 -- TODO: add gauge
 
+local serpent = require("serpent")
+
 local state = "empty"
+-- local timeformat = "%H:%M" --" %d.%m.%y"
 
-local filename = "today.txt"
-local timeformat = "%H:%M" --" %d.%m.%y"
-
-local startTime = nil
-local endTime = nil
+local time = {
+	start = "",
+	finish = "",
+	diff = "",
+}
 
 local errorData = {
 	hasError = false,
@@ -23,34 +26,33 @@ local errorData = {
 }
 
 local startDay = function()
-	local time = os.date(timeformat)
-	print("Start: " .. time)
-	love.filesystem.write("start.txt", time)
-	startTime = time
+	local now = os.date("*t")
+	love.filesystem.write("start.txt", serpent.dump(now))
+	startTime = now
 	state = "started"
 end
 
 local reEnter = function()
-	local startToday, fail = love.filesystem.read("start.txt")
-	if not startToday then
+	local resultStart, fail = love.filesystem.read("start.txt")
+	if not resultStart then
 		errorData.hasError = true
 		errorData.type = "read start.txt"
 		errorData.message = fail
 	else
-		startTime = startToday
+		time.start = resultStart
 		state = "started"
 	end
 
-	if not love.filesystem.getInfo("end.txt") then
+	if not love.filesystem.getInfo("finish.txt") then
 		state = "started"
 	else
-		local endToday, fail = love.filesystem.read("end.txt")
-		if not endToday then
+		local resultFinish, fail = love.filesystem.read("finish.txt")
+		if not resultFinish then
 			errorData.hasError = true
-			errorData.type = "read end.txt"
+			errorData.type = "read finish.txt"
 			errorData.message = fail
 		else
-			endTime = endToday
+			time.finish = resultFinish
 			state = "done"
 		end
 	end
@@ -58,22 +60,18 @@ end
 
 local endDay = function()
 	local time = os.date(timeformat)
-	print("End: " .. time)
-	love.filesystem.write("end.txt", time)
+	love.filesystem.write("finish.txt", time)
 	endTime = time
 	state = "done"
 end
 
 function love.load()
-	print("LOADING...")
 	-- if todays file does not exist, start
 	if not love.filesystem.getInfo("start.txt") then
-		print("NOT STARTED TODAY, STARTING NOW...")
 		startDay()
 
-	-- if todays file exists, re enter
+	-- if todays file exists, re-enter
 	else
-		print("RENTERING...")
 		reEnter()
 	end
 end
@@ -90,8 +88,13 @@ function love.draw()
 	if state == "started" then
 		love.graphics.print("Started @ " .. tostring(startTime), 10, 20)
 	elseif state == "done" then
+		duration = os.difftime(os.time(), os.time(time.start))
 		love.graphics.print("Done", 10, 20)
-		love.graphics.print(string.format("Worked from %s to %s", startTime, endTime), 10, 30)
+		love.graphics.print(
+			string.format("Worked for %s, from %s to %s", tostring(duration), startTime, endTime),
+			10,
+			40
+		)
 	else
 		love.graphics.print("no state set, check errors...", 10, 210)
 	end
