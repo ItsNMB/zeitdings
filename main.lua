@@ -23,7 +23,20 @@ local ui = {
 		textWidth = 50,
 		textHeight = 4,
 		amount = 0,
-		maxAmount = 120 * 2,
+		maxAmount = 1,
+	},
+	restartButton = {
+		x = 0.25,
+		y = 0.75,
+		width = 0.5,
+		height = 0.1,
+		text = "Restart day",
+		color = { 0.9, 0.2, 0.2 },
+		textColor = { 1, 1, 1 },
+		textWidth = 60,
+		textHeight = 4,
+		amount = 0,
+		maxAmount = 3,
 	},
 }
 
@@ -52,7 +65,6 @@ local function writeTodaysFile()
 end
 
 local startDay = function()
-	log("starting day")
 	local now = os.date("*t")
 	time.start = now
 	writeTodaysFile()
@@ -66,23 +78,16 @@ local reEnter = function()
 		errorData.type = "read todays file"
 		errorData.message = fail
 	else
-		log("read todays file")
 		local ok, today = serpent.load(resultToday)
 		if ok then
-			log("loaded todays file")
 			time = today
 			if time.start == "x" then
-				log("no start time found")
 				startDay()
 			else
-				log("start time found")
 				state = "started"
 			end
 			if time.finish == "x" then
-				log("no finish time found")
 			else
-				log("finish time found")
-				log(time.finish)
 				state = "done"
 			end
 		else
@@ -102,18 +107,30 @@ local endDay = function()
 	state = "done"
 end
 
+local restartDay = function()
+	love.filesystem.write(todaysFile .. ".bak", serpent.dump(time))
+	time = {
+		start = "x",
+		finish = "x",
+		diff = "x",
+	}
+	love.filesystem.write(todaysFile, serpent.dump(time))
+	state = "empty"
+	startDay()
+end
 --======================================================================================================================--
 
 function love.load()
 	love.window.setTitle("Zeitdings")
 	love.window.setMode(360, 640)
-	log("loading...")
+
+	love.graphics.setBackgroundColor(0, 0, 0)
+	love.graphics.setFont(love.graphics.newFont(18))
+
 	if not love.filesystem.getInfo(todaysFile) then
-		log("no file found, creating...")
 		writeTodaysFile()
 		startDay()
 	else
-		log("file found, reentering...")
 		reEnter()
 	end
 end
@@ -123,23 +140,37 @@ function love.update(dt)
 	local height = love.graphics.getHeight()
 	local touches = love.touch.getTouches()
 
-	if state == "started" then
-		-- for i, id in ipairs(touches) do
-		local x, y = love.mouse.getPosition() --love.touch.getPosition(id)
-		if
-			x > width * ui.finishButton.x
-			and x < width * ui.finishButton.x + width * ui.finishButton.width
-			and y > height * ui.finishButton.y
-			and y < height * ui.finishButton.y + height * ui.finishButton.height
-		then
-			ui.finishButton.amount = ui.finishButton.amount + 1
-			if ui.finishButton.amount > ui.finishButton.maxAmount then
-				endDay()
+	for i, id in ipairs(touches) do
+		local x, y = love.touch.getPosition(id)
+		if state == "started" then
+			if
+				x > width * ui.finishButton.x
+				and x < width * ui.finishButton.x + width * ui.finishButton.width
+				and y > height * ui.finishButton.y
+				and y < height * ui.finishButton.y + height * ui.finishButton.height
+			then
+				ui.finishButton.amount = ui.finishButton.amount + dt
+				if ui.finishButton.amount > ui.finishButton.maxAmount then
+					endDay()
+				end
+			else
+				ui.finishButton.amount = 0
 			end
-		else
-			ui.finishButton.amount = 0
+		elseif state == "done" then
+			if
+				x > width * ui.restartButton.x
+				and x < width * ui.restartButton.x + width * ui.restartButton.width
+				and y > height * ui.restartButton.y
+				and y < height * ui.restartButton.y + height * ui.restartButton.height
+			then
+				ui.restartButton.amount = ui.restartButton.amount + dt
+				if ui.restartButton.amount > ui.restartButton.maxAmount then
+					restartDay()
+				end
+			else
+				ui.restartButton.amount = 0
+			end
 		end
-		-- end
 	end
 end
 
@@ -156,22 +187,31 @@ function love.draw()
 			width / 2 * (ui.finishButton.amount / ui.finishButton.maxAmount)
 		)
 	end
+	if ui.restartButton.amount > 0 then
+		love.graphics.setColor(0.2, 0.1, 0.1)
+		love.graphics.circle(
+			"fill",
+			width / 2,
+			height / 2,
+			width / 2 * (ui.restartButton.amount / ui.restartButton.maxAmount)
+		)
+	end
 
 	if errorData.hasError then
 		love.graphics.setColor(1, 0.2, 0.2)
-		love.graphics.print(string.format("Error [%s]: %s", errorData.type, errorData.message, 10, 10))
+		love.graphics.print(string.format("Error [%s]: %s", errorData.type, errorData.message, 10, 40))
 	end
 
 	love.graphics.setColor(1, 1, 1)
 	if state == "started" then
-		love.graphics.print(string.format("Started @ %d:%d", time.start.hour, time.start.min), 10, 20)
+		love.graphics.print(string.format("Started @ %d:%d", time.start.hour, time.start.min), 10, 40)
 		-- time left
 	elseif state == "done" then
-		love.graphics.print("Done!", 10, 20)
 		love.graphics.print(
 			string.format(
-				"Worked for %ss, from %d:%d to %d:%d",
-				time.diff,
+				"Done!\nWorked for %dh %dm, from %d:%d to %d:%d",
+				time.diff / 3600,
+				(time.diff % 3600) / 60,
 				time.start.hour,
 				time.start.min,
 				time.finish.hour,
@@ -181,7 +221,7 @@ function love.draw()
 			40
 		)
 	else
-		love.graphics.print("no state set, check errors...", 10, 210)
+		love.graphics.print("no state set, check errors...", 10, 30)
 	end
 
 	if state == "started" then
@@ -200,6 +240,22 @@ function love.draw()
 			(width * ui.finishButton.x) + (width * ui.finishButton.width / 2) - (ui.finishButton.textWidth / 2),
 			(height * ui.finishButton.y) + (height * ui.finishButton.height / 2) - (ui.finishButton.textHeight * 2)
 		)
+	elseif state == "done" then
+		love.graphics.setColor(ui.restartButton.color)
+		love.graphics.rectangle(
+			"fill",
+			width * ui.restartButton.x,
+			height * ui.restartButton.y,
+			width * ui.restartButton.width,
+			height * ui.restartButton.height,
+			6
+		)
+		love.graphics.setColor(ui.restartButton.textColor)
+		love.graphics.print(
+			ui.restartButton.text,
+			(width * ui.restartButton.x) + (width * ui.restartButton.width / 2) - (ui.restartButton.textWidth / 2),
+			(height * ui.restartButton.y) + (height * ui.restartButton.height / 2) - (ui.restartButton.textHeight * 2)
+		)
 	end
 end
 
@@ -209,6 +265,10 @@ function love.keypressed(key)
 	elseif key == "space" then
 		if state == "started" then
 			endDay()
+		end
+	elseif key == "r" then
+		if state == "done" then
+			restartDay()
 		end
 	end
 end
