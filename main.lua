@@ -22,6 +22,8 @@ local ui = {
 		textColor = { 1, 1, 1 },
 		textWidth = 50,
 		textHeight = 4,
+		amount = 0,
+		maxAmount = 120 * 2,
 	},
 }
 
@@ -92,6 +94,7 @@ local reEnter = function()
 end
 
 local endDay = function()
+	ui.finishButton.amount = 0
 	local now = os.date("*t")
 	time.finish = now
 	time.diff = os.difftime(os.time(time.finish), os.time(time.start))
@@ -114,17 +117,43 @@ function love.load()
 end
 
 function love.update(dt)
+	local width = love.graphics.getWidth()
+	local height = love.graphics.getHeight()
 	local touches = love.touch.getTouches()
 
-	for i, id in ipairs(touches) do
-		local x, y = love.touch.getPosition(id)
-		love.graphics.circle("fill", x, y, 20)
+	if state == "started" then
+		-- for i, id in ipairs(touches) do
+		local x, y = love.mouse.getPosition() --love.touch.getPosition(id)
+		if
+			x > width * ui.finishButton.x
+			and x < width * ui.finishButton.x + width * ui.finishButton.width
+			and y > height * ui.finishButton.y
+			and y < height * ui.finishButton.y + height * ui.finishButton.height
+		then
+			ui.finishButton.amount = ui.finishButton.amount + 1
+			if ui.finishButton.amount > ui.finishButton.maxAmount then
+				endDay()
+			end
+		else
+			ui.finishButton.amount = 0
+		end
+		-- end
 	end
 end
 
 function love.draw()
 	local width = love.graphics.getWidth()
 	local height = love.graphics.getHeight()
+
+	if ui.finishButton.amount > 0 then
+		love.graphics.setColor(0.1, 0.1, 0.1)
+		love.graphics.circle(
+			"fill",
+			width / 2,
+			height / 2,
+			width / 2 * (ui.finishButton.amount / ui.finishButton.maxAmount)
+		)
+	end
 
 	if errorData.hasError then
 		love.graphics.setColor(1, 0.2, 0.2)
@@ -153,26 +182,23 @@ function love.draw()
 		love.graphics.print("no state set, check errors...", 10, 210)
 	end
 
-	love.graphics.print(serpent.block(time), 10, 170)
-
-	love.graphics.print("Press [escape] to quit", 10, 70)
-	love.graphics.print("Press [space] to end day", 10, 90)
-
-	love.graphics.setColor(ui.finishButton.color)
-	love.graphics.rectangle(
-		"fill",
-		width * ui.finishButton.x,
-		height * ui.finishButton.y,
-		width * ui.finishButton.width,
-		height * ui.finishButton.height,
-		6
-	)
-	love.graphics.setColor(ui.finishButton.textColor)
-	love.graphics.print(
-		ui.finishButton.text,
-		(width * ui.finishButton.x) + (width * ui.finishButton.width / 2) - (ui.finishButton.textWidth / 2),
-		(height * ui.finishButton.y) + (height * ui.finishButton.height / 2) - (ui.finishButton.textHeight * 2)
-	)
+	if state == "started" then
+		love.graphics.setColor(ui.finishButton.color)
+		love.graphics.rectangle(
+			"fill",
+			width * ui.finishButton.x,
+			height * ui.finishButton.y,
+			width * ui.finishButton.width,
+			height * ui.finishButton.height,
+			6
+		)
+		love.graphics.setColor(ui.finishButton.textColor)
+		love.graphics.print(
+			ui.finishButton.text,
+			(width * ui.finishButton.x) + (width * ui.finishButton.width / 2) - (ui.finishButton.textWidth / 2),
+			(height * ui.finishButton.y) + (height * ui.finishButton.height / 2) - (ui.finishButton.textHeight * 2)
+		)
+	end
 end
 
 function love.keypressed(key)
