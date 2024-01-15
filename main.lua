@@ -16,11 +16,11 @@ local ui = {
 		x = 0.25,
 		y = 0.75,
 		width = 0.5,
-		height = 0.1,
+		height = 0.08,
 		text = "End day",
 		color = { 0.2, 0.2, 0.9 },
 		textColor = { 1, 1, 1 },
-		textWidth = 60,
+		textWidth = 70,
 		textHeight = 4,
 		amount = 0,
 		maxAmount = 1,
@@ -29,11 +29,11 @@ local ui = {
 		x = 0.25,
 		y = 0.75,
 		width = 0.5,
-		height = 0.1,
+		height = 0.08,
 		text = "Restart day",
 		color = { 0.9, 0.2, 0.2 },
 		textColor = { 1, 1, 1 },
-		textWidth = 80,
+		textWidth = 100,
 		textHeight = 4,
 		amount = 0,
 		maxAmount = 3,
@@ -139,6 +139,7 @@ function love.update(dt)
 	local width = love.graphics.getWidth()
 	local height = love.graphics.getHeight()
 	local touches = love.touch.getTouches()
+	love.graphics.print(string.format("Touches: %d", #touches), 10, 100)
 
 	for i, id in ipairs(touches) do
 		local x, y = love.touch.getPosition(id)
