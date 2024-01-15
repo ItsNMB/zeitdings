@@ -105,6 +105,8 @@ end
 --======================================================================================================================--
 
 function love.load()
+	love.window.setTitle("Zeitdings")
+	love.window.setMode(360, 640)
 	log("loading...")
 	if not love.filesystem.getInfo(todaysFile) then
 		log("no file found, creating...")
