@@ -20,7 +20,7 @@ local ui = {
 		text = "End day",
 		color = { 0.2, 0.2, 0.9 },
 		textColor = { 1, 1, 1 },
-		textWidth = 50,
+		textWidth = 60,
 		textHeight = 4,
 		amount = 0,
 		maxAmount = 1,
@@ -33,7 +33,7 @@ local ui = {
 		text = "Restart day",
 		color = { 0.9, 0.2, 0.2 },
 		textColor = { 1, 1, 1 },
-		textWidth = 60,
+		textWidth = 80,
 		textHeight = 4,
 		amount = 0,
 		maxAmount = 3,
@@ -153,8 +153,6 @@ function love.update(dt)
 				if ui.finishButton.amount > ui.finishButton.maxAmount then
 					endDay()
 				end
-			else
-				ui.finishButton.amount = 0
 			end
 		elseif state == "done" then
 			if
@@ -167,8 +165,6 @@ function love.update(dt)
 				if ui.restartButton.amount > ui.restartButton.maxAmount then
 					restartDay()
 				end
-			else
-				ui.restartButton.amount = 0
 			end
 		end
 	end
@@ -257,6 +253,11 @@ function love.draw()
 			(height * ui.restartButton.y) + (height * ui.restartButton.height / 2) - (ui.restartButton.textHeight * 2)
 		)
 	end
+end
+
+function love.touchreleased(id, x, y, dx, dy, pressure)
+	ui.finishButton.amount = 0
+	ui.restartButton.amount = 0
 end
 
 function love.keypressed(key)
