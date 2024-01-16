@@ -141,7 +141,7 @@ function love.update(dt)
 	local width = love.graphics.getWidth()
 	local height = love.graphics.getHeight()
 	local touches = love.touch.getTouches()
-	if touches == 0 then
+	if #touches == 0 then
 		ui.tapDownReset = false
 		ui.finishButton.amount = 0
 		ui.restartButton.amount = 0
