@@ -109,6 +109,7 @@ local endDay = function()
 end
 
 local restartDay = function()
+	ui.restartButton.amount = 0
 	love.filesystem.write(todaysFile .. ".bak", serpent.dump(time))
 	time = {
 		start = "x",
@@ -142,6 +143,8 @@ function love.update(dt)
 	local touches = love.touch.getTouches()
 	if touches == 0 then
 		ui.tapDownReset = false
+		ui.finishButton.amount = 0
+		ui.restartButton.amount = 0
 	end
 
 	if not ui.tapDownReset then
