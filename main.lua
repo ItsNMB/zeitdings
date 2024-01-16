@@ -21,7 +21,7 @@ local ui = {
 		color = { 0.2, 0.2, 0.9 },
 		textColor = { 1, 1, 1 },
 		textWidth = 70,
-		textHeight = 4,
+		textHeight = 6,
 		amount = 0,
 		maxAmount = 1,
 	},
@@ -34,10 +34,11 @@ local ui = {
 		color = { 0.9, 0.2, 0.2 },
 		textColor = { 1, 1, 1 },
 		textWidth = 100,
-		textHeight = 4,
+		textHeight = 6,
 		amount = 0,
 		maxAmount = 3,
 	},
+	tapDownReset = false,
 }
 
 local state = "empty"
@@ -139,32 +140,38 @@ function love.update(dt)
 	local width = love.graphics.getWidth()
 	local height = love.graphics.getHeight()
 	local touches = love.touch.getTouches()
-	love.graphics.print(string.format("Touches: %d", #touches), 10, 100)
+	if touches == 0 then
+		ui.tapDownReset = false
+	end
 
-	for i, id in ipairs(touches) do
-		local x, y = love.touch.getPosition(id)
-		if state == "started" then
-			if
-				x > width * ui.finishButton.x
-				and x < width * ui.finishButton.x + width * ui.finishButton.width
-				and y > height * ui.finishButton.y
-				and y < height * ui.finishButton.y + height * ui.finishButton.height
-			then
-				ui.finishButton.amount = ui.finishButton.amount + dt
-				if ui.finishButton.amount > ui.finishButton.maxAmount then
-					endDay()
+	if not ui.tapDownReset then
+		for i, id in ipairs(touches) do
+			local x, y = love.touch.getPosition(id)
+			if state == "started" then
+				if
+					x > width * ui.finishButton.x
+					and x < width * ui.finishButton.x + width * ui.finishButton.width
+					and y > height * ui.finishButton.y
+					and y < height * ui.finishButton.y + height * ui.finishButton.height
+				then
+					ui.finishButton.amount = ui.finishButton.amount + dt
+					if ui.finishButton.amount > ui.finishButton.maxAmount then
+						ui.tapDownReset = true
+						endDay()
+					end
 				end
-			end
-		elseif state == "done" then
-			if
-				x > width * ui.restartButton.x
-				and x < width * ui.restartButton.x + width * ui.restartButton.width
-				and y > height * ui.restartButton.y
-				and y < height * ui.restartButton.y + height * ui.restartButton.height
-			then
-				ui.restartButton.amount = ui.restartButton.amount + dt
-				if ui.restartButton.amount > ui.restartButton.maxAmount then
-					restartDay()
+			elseif state == "done" then
+				if
+					x > width * ui.restartButton.x
+					and x < width * ui.restartButton.x + width * ui.restartButton.width
+					and y > height * ui.restartButton.y
+					and y < height * ui.restartButton.y + height * ui.restartButton.height
+				then
+					ui.restartButton.amount = ui.restartButton.amount + dt
+					if ui.restartButton.amount > ui.restartButton.maxAmount then
+						ui.tapDownReset = true
+						restartDay()
+					end
 				end
 			end
 		end
@@ -175,15 +182,6 @@ function love.draw()
 	local width = love.graphics.getWidth()
 	local height = love.graphics.getHeight()
 
-	if ui.finishButton.amount > 0 then
-		love.graphics.setColor(0.1, 0.1, 0.1)
-		love.graphics.circle(
-			"fill",
-			width / 2,
-			height / 2,
-			width / 2 * (ui.finishButton.amount / ui.finishButton.maxAmount)
-		)
-	end
 	if ui.restartButton.amount > 0 then
 		love.graphics.setColor(0.2, 0.1, 0.1)
 		love.graphics.circle(
@@ -191,6 +189,15 @@ function love.draw()
 			width / 2,
 			height / 2,
 			width / 2 * (ui.restartButton.amount / ui.restartButton.maxAmount)
+		)
+	end
+	if ui.finishButton.amount > 0 then
+		love.graphics.setColor(0.1, 0.1, 0.1)
+		love.graphics.circle(
+			"fill",
+			width / 2,
+			height / 2,
+			width / 2 * (ui.finishButton.amount / ui.finishButton.maxAmount)
 		)
 	end
 
@@ -254,11 +261,6 @@ function love.draw()
 			(height * ui.restartButton.y) + (height * ui.restartButton.height / 2) - (ui.restartButton.textHeight * 2)
 		)
 	end
-end
-
-function love.touchreleased(id, x, y, dx, dy, pressure)
-	ui.finishButton.amount = 0
-	ui.restartButton.amount = 0
 end
 
 function love.keypressed(key)
